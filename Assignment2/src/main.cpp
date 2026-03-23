@@ -1,8 +1,16 @@
 #include <exception>
 
 #include "Engine.hpp"
-#include "Object.hpp"
 #include "Vec2.hpp"
+
+/* NOTE::
+ * GameEngine
+ *		Scene
+ *			Systems
+ *			EntityManager
+ *				Entity
+ *					Componnent
+ */
 
 int main(void) {}
 

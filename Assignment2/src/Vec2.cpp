@@ -1,5 +1,7 @@
 #include "Vec2.hpp"
 
+#include <cmath>
+
 Vec2::Vec2(void) : x(0.0f), y(0.0f) {}
 
 Vec2::Vec2(float xin, float yin) : x(xin), y(yin) {}
@@ -14,6 +16,38 @@ Vec2 &Vec2::operator=(const Vec2 &other) {
 	return (*this);
 }
 Vec2::~Vec2(void) {}
+
+float Vec2::length(void) const {
+	// FIXME: Add logic
+	return (0);
+}
+
+Vec2 &Vec2::add(const Vec2 &other) {
+	x += other.x;
+	y += other.y;
+	return (*this);
+}
+
+Vec2 &Vec2::normalize(void) {
+	// FIXME: Add logic
+	return (*this);
+}
+
+Vec2 &Vec2::scale(const float scalar) {
+	x *= scalar;
+	y *= scalar;
+	return (*this);
+}
+
+Vec2 &Vec2::rotate(const float deg) {
+	// FIXME: Add logic
+	(void)deg;
+	return (*this);
+}
+
+float Vec2::dist(const Vec2 &other) const {
+	return (sqrtf(powf(other.x - x, 2) + powf(other.y - y, 2)));
+}
 
 Vec2 Vec2::operator+(const Vec2 &other) const {
 	return (Vec2(x + other.x, y + other.y));
@@ -66,6 +100,13 @@ Vec2 &Vec2::operator/=(const float scalar) {
 	return (*this);
 }
 
+bool Vec2::operator==(const Vec2 &other) const {
+	return ((fabs(x - other.x) <= _epsilon) && fabs(y - other.y) <= _epsilon);
+}
+
+bool Vec2::operator!=(const Vec2 &other) const {
+	return (*this == other);
+}
 Vec2 operator*(const float scalar, const Vec2 &vec) {
 	return (Vec2(scalar * vec.x, scalar * vec.y));
 }

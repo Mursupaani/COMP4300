@@ -42,12 +42,10 @@ RESET			:= $(shell tput sgr0)
 
 SRCS_MAIN	:= \
 	main.cpp \
-	Object.cpp \
 	Engine.cpp\
 	Vec2.cpp \
 	Entity.cpp \
 	EntityManager.cpp \
-	Game.cpp \
 	Clock.cpp \
 
 # Combine all source files
