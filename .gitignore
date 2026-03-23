@@ -1,4 +1,4 @@
-.app
+app
 *.o
 *.lock
 compile_commands.json
