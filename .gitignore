@@ -1,5 +1,7 @@
 .app
 *.o
+*.lock
+compile_commands.json
 *.d
 .cache
 .DS_Store
