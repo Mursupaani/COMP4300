@@ -42,7 +42,7 @@ RESET			:= $(shell tput sgr0)
 
 SRCS_MAIN	:= \
 	main.cpp \
-	Engine.cpp\
+	Game.cpp\
 	Vec2.cpp \
 	Entity.cpp \
 	EntityManager.cpp \

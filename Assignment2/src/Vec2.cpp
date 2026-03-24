@@ -1,7 +1,5 @@
 #include "Vec2.hpp"
 
-#include <cmath>
-
 Vec2::Vec2(void) : x(0.0f), y(0.0f) {}
 
 Vec2::Vec2(float xin, float yin) : x(xin), y(yin) {}
@@ -18,7 +16,7 @@ Vec2 &Vec2::operator=(const Vec2 &other) {
 Vec2::~Vec2(void) {}
 
 float Vec2::length(void) const {
-	// FIXME: Add logic
+	return (sqrtf(x * x + y * y));
 	return (0);
 }
 
@@ -29,7 +27,9 @@ Vec2 &Vec2::add(const Vec2 &other) {
 }
 
 Vec2 &Vec2::normalize(void) {
-	// FIXME: Add logic
+	float len = this->length();
+	x /= len;
+	y /= len;
 	return (*this);
 }
 
@@ -40,8 +40,12 @@ Vec2 &Vec2::scale(const float scalar) {
 }
 
 Vec2 &Vec2::rotate(const float deg) {
-	// FIXME: Add logic
-	(void)deg;
+	float theta = deg * (M_PI / 180);
+	float cosTheta = std::cos(theta);
+	float sinTheta = std::sin(theta);
+	float oldX = x;
+	x = oldX * cosTheta - y * sinTheta;
+	y = oldX * sinTheta + y * cosTheta;
 	return (*this);
 }
 

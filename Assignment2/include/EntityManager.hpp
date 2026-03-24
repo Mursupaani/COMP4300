@@ -9,6 +9,8 @@
 
 #include "Entity.hpp"
 
+class Entity;
+
 // FIXME: Use this instead of string in map?
 typedef enum e_entityType {
 

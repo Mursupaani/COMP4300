@@ -1,7 +1,8 @@
 #pragma once
+#include <cmath>
 #include <iostream>
 #include <ostream>
-#include <string>
+#define DEG2RAD(deg) (M_PI / 180)
 
 // NOTE: To implement: length, normalize, rotate, etc?
 
@@ -19,15 +20,12 @@ class Vec2 {
 		Vec2 &operator=(const Vec2 &other);
 		~Vec2(void);
 
-		// FIXME: Add logic
 		float length(void) const;
 		float dist(const Vec2 &other) const;
 		Vec2 &add(const Vec2 &other);
-		// FIXME: Add logic
 		Vec2 &normalize(void);
 
 		Vec2 &scale(const float scalar);
-		// FIXME: Add logic
 		Vec2 &rotate(const float deg);
 
 		Vec2 operator+(const Vec2 &other) const;

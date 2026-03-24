@@ -1,5 +1,9 @@
 #include "EntityManager.hpp"
 
+#include <memory>
+
+#include "Entity.hpp"
+
 EntityManager::EntityManager(void) {}
 
 EntityManager::~EntityManager(void) {}
@@ -11,12 +15,12 @@ void EntityManager::update(void) {
 	}
 
 	auto ne = remove_if(m_entities.begin(), m_entities.end(),
-						[](EntityPtr &e) { return (e->isAlive() == false); });
+						[](EntityPtr &e) { return (e->isActive() == false); });
 	m_entities.erase(ne, m_entities.end());
 
 	for (auto &[tag, vec] : m_entityMap) {
 		auto neMap = remove_if(vec.begin(), vec.end(), [](EntityPtr &e) {
-			return (e->isAlive() == false);
+			return (e->isActive() == false);
 		});
 		vec.erase(neMap, vec.end());
 	}
@@ -25,7 +29,7 @@ void EntityManager::update(void) {
 }
 
 EntityPtr EntityManager::addEntity(const std::string &tag) {
-	auto e = std::make_shared<Entity>(tag, m_totalEntities++);
+	auto e = std::shared_ptr<Entity>(new Entity(tag, m_totalEntities++));
 	m_toAdd.push_back(e);
 	return (e);
 }

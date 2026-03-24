@@ -1,6 +1,6 @@
 #include <exception>
 
-#include "Engine.hpp"
+#include "Game.hpp"
 #include "Vec2.hpp"
 
 /* NOTE::
@@ -12,7 +12,16 @@
  *					Componnent
  */
 
-int main(void) {}
+int main(void) {
+	Game game("config.txt");
+	game.run();
+}
+
+// NOTE: Run game like this!
+// int main(void) {
+// 	Game game("config.txt");
+// 	game.run();
+// }
 
 // void run(Engine &e) {
 // 	while (e.window.isOpen()) {
