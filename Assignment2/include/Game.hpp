@@ -61,6 +61,8 @@ class Game {
 		void spawnBullet(std::shared_ptr<Entity> &entity, const Vec2 &mousePos);
 		void spawnSpecialWeapon(std::shared_ptr<Entity> &entity);
 
+		void reset(void);
+
 		// const std::string m_homeDir = std::getenv("HOME");
 		unsigned int m_fontSize = 12;
 		sf::Vector2u windowSize{1920, 1080};

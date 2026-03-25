@@ -9,29 +9,28 @@ EntityManager::EntityManager(void) {}
 EntityManager::~EntityManager(void) {}
 
 void EntityManager::update(void) {
-	for (auto &e : m_toAdd) {
+	for (auto &e : m_entitiesToAdd) {
 		m_entities.push_back(e);
 		m_entityMap[e->tag()].push_back(e);
 	}
+	m_entitiesToAdd.clear();
 
-	auto ne = remove_if(m_entities.begin(), m_entities.end(),
-						[](EntityPtr &e) { return (e->isActive() == false); });
-	m_entities.erase(ne, m_entities.end());
-
-	for (auto &[tag, vec] : m_entityMap) {
-		auto neMap = remove_if(vec.begin(), vec.end(), [](EntityPtr &e) {
-			return (e->isActive() == false);
-		});
-		vec.erase(neMap, vec.end());
+	removeDeadEntities(m_entities);
+	for (auto &[type, entityVec] : m_entityMap) {
+		removeDeadEntities(entityVec);
 	}
+}
 
-	m_toAdd.clear();
+void EntityManager::removeDeadEntities(EntityVec &entities) {
+	auto ne = remove_if(entities.begin(), entities.end(),
+						[](EntityPtr &e) { return (e->isActive() == false); });
+	entities.erase(ne, entities.end());
 }
 
 EntityPtr EntityManager::addEntity(const std::string &tag) {
-	auto e = std::shared_ptr<Entity>(new Entity(tag, m_totalEntities++));
-	m_toAdd.push_back(e);
-	return (e);
+	auto entity = std::shared_ptr<Entity>(new Entity(tag, m_totalEntities++));
+	m_entitiesToAdd.push_back(entity);
+	return (entity);
 }
 EntityVec &EntityManager::getEntities(void) {
 	return (m_entities);

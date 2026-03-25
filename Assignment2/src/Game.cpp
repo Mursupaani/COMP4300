@@ -4,9 +4,14 @@
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/Angle.hpp>
 #include <SFML/System/Vector2.hpp>
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/Keyboard.hpp>
+#include <SFML/Window/Mouse.hpp>
 #include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/WindowEnums.hpp>
+#include <cstdlib>
 #include <fstream>
+#include <memory>
 
 #include "Components.hpp"
 #include "EntityManager.hpp"
@@ -42,6 +47,7 @@ void Game::run(void) {
 		//  may need to be moved when pause implemented
 		++m_currentFrame;
 	}
+	m_window.close();
 }
 
 void Game::init(const std::string &path) {
@@ -63,9 +69,28 @@ void Game::init(const std::string &path) {
 	spawnPlayer();
 }
 
+void Game::reset(void) {
+	EntityVec &enemies = m_entities.getEntities("enemy");
+	for (auto &e : enemies)
+		e->destroy();
+	m_player->destroy();
+	spawnPlayer();
+	m_score = 0;
+}
+
 // NOTE: Private:
 
 void Game::sMovement(void) {
+	// FIXME: Move to handle player movement
+	m_player->cTransform->velocity = {0, 0};
+	if (m_player->cInput->up)
+		m_player->cTransform->velocity.y = -5;
+	if (m_player->cInput->down)
+		m_player->cTransform->velocity.y = 5;
+	if (m_player->cInput->left)
+		m_player->cTransform->velocity.x = -5;
+	if (m_player->cInput->right)
+		m_player->cTransform->velocity.x = 5;
 	for (auto &e : m_entities.getEntities()) {
 		if (e->cTransform)
 			e->cTransform->pos += e->cTransform->velocity;
@@ -74,6 +99,64 @@ void Game::sMovement(void) {
 
 void Game::sUserInput(void) {
 	// FIXME: Handle user input
+	while (const std::optional event = m_window.pollEvent()) {
+		if (event->is<sf::Event::Closed>()) {
+			m_running = false;
+		}
+		if (const auto *keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+			switch (keyPressed->code) {
+				case sf::Keyboard::Key::Escape:
+					m_running = false;
+					break;
+				case sf::Keyboard::Key::W:
+					m_player->cInput->up = true;
+					break;
+				case sf::Keyboard::Key::A:
+					m_player->cInput->left = true;
+					break;
+				case sf::Keyboard::Key::S:
+					m_player->cInput->down = true;
+					break;
+				case sf::Keyboard::Key::D:
+					m_player->cInput->right = true;
+					break;
+				case sf::Keyboard::Key::R:
+					reset();
+					break;
+				default:
+					break;
+			}
+		}
+		if (const auto *keyReleased = event->getIf<sf::Event::KeyReleased>()) {
+			switch (keyReleased->code) {
+				case sf::Keyboard::Key::W:
+					m_player->cInput->up = false;
+					break;
+				case sf::Keyboard::Key::A:
+					m_player->cInput->left = false;
+					break;
+				case sf::Keyboard::Key::S:
+					m_player->cInput->down = false;
+					break;
+				case sf::Keyboard::Key::D:
+					m_player->cInput->right = false;
+					break;
+				default:
+					break;
+			}
+		}
+		if (const auto *mouseButton =
+				event->getIf<sf::Event::MouseButtonPressed>()) {
+			Vec2 mousePos(sf::Mouse::getPosition(m_window).x,
+						  sf::Mouse::getPosition(m_window).y);
+			if (mouseButton->button == sf::Mouse::Button::Left) {
+				spawnBullet(m_player, mousePos);
+			}
+			if (mouseButton->button == sf::Mouse::Button::Right) {
+				spawnSpecialWeapon(m_player);
+			}
+		}
+	}
 }
 
 void Game::sLifeSpan(void) {
@@ -84,7 +167,6 @@ void Game::sRender(void) {
 	m_window.clear();
 
 	for (auto &e : m_entities.getEntities()) {
-		// if (e->cTransform && e->cShape) {}
 		e->cShape->circle.setPosition(
 			sf::Vector2f(e->cTransform->pos.x, e->cTransform->pos.y));
 		e->cTransform->angle += 1.0f;
@@ -96,11 +178,19 @@ void Game::sRender(void) {
 }
 
 void Game::sEnemySpawner(void) {
-	// FIXME: Add logic
+	// FIXME: use m_currendFrame - m_lastEnemySpawnTime
+	if (m_currentFrame % 60 == 0)
+		spawnEnemy();
 }
 
 void Game::sCollision(void) {
-	// FIXME: Add logic
+	for (auto &b : m_entities.getEntities("bullet")) {
+		for (auto &e : m_entities.getEntities("enemy")) {
+			// FIXME: Add logic
+			(void)b;
+			(void)e;
+		}
+	}
 }
 
 void Game::spawnPlayer(void) {
@@ -122,15 +212,47 @@ void Game::spawnEnemy(void) {
 	auto enemy = m_entities.addEntity("enemy");
 
 	// randomize position
-	float ex = m_window.getSize().x / 2.0f;
-	float ey = m_window.getSize().y / 2.0f;
-	enemy->cTransform = new CTransform(Vec2(ex, ey), Vec2(1.0f, 1.0f), 0.0f);
-	enemy->cShape =
-		new CShape(32.0f, 8, sf::Color(10, 10, 10), sf::Color(255, 0, 0), 4.0f);
-	enemy->cInput = new CInput();
+	float ex = std::rand() % m_window.getSize().x;
+	float ey = std::rand() % m_window.getSize().y;
 
-	m_player = enemy;
+	// randomize velocity vector (direction) based on speed
+	float rdx = 1.0f;
+	float rdy = 1.0f;
+
+	enemy->cTransform = new CTransform(Vec2(ex, ey), Vec2(rdx, rdy), 0.0f);
+
+	// randomize vertices based on VMIN and VMAX
+	int vertices = 4;
+
+	m_enemyConfig.SR = 32.0f;
+	m_enemyConfig.OR = 255;
+	m_enemyConfig.OG = 0;
+	m_enemyConfig.OB = 0;
+	m_enemyConfig.OT = 0;
+	enemy->cShape = new CShape(
+		m_enemyConfig.SR, vertices,
+		sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB),
+		sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB),
+		m_enemyConfig.OT);
+
 	m_lastEnemySpawnTime = m_currentFrame;
+}
+
+void Game::spawnSmallEnemies(std::shared_ptr<Entity> &entity) {
+	(void)entity;
+}
+
+void Game::spawnBullet(std::shared_ptr<Entity> &entity, const Vec2 &mousePos) {
+	auto bullet = m_entities.addEntity("bullet");
+	bullet->cTransform = new CTransform(mousePos, Vec2(0, 0), 0);
+	bullet->cShape =
+		new CShape(10, 8, sf::Color(255, 255, 255), sf::Color(255, 0, 0), 2);
+	(void)entity;
+}
+
+void Game::spawnSpecialWeapon(std::shared_ptr<Entity> &entity) {
+	std::cout << "SPECIAL\n";
+	(void)entity;
 }
 
 void Game::bounceObjectsFromWalls(void) {
