@@ -48,5 +48,7 @@ class Vec2 {
 		bool operator!=(const Vec2 &other) const;
 };
 
+float dot(Vec2 v1, Vec2 v2);
+
 std::ostream &operator<<(std::ostream &stream, const Vec2 &vec);
 Vec2		  operator*(const float scalar, const Vec2 &vec);

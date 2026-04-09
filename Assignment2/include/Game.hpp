@@ -3,9 +3,11 @@
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/Window/WindowEnums.hpp>
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <fstream>
 #include <memory>
+#include <random>
 #include <stdexcept>
 #include <vector>
 
@@ -17,35 +19,55 @@ struct PlayerConfig {
 		float S;
 };
 struct EnemyConfig {
-		int	  SR, CR, OR, OG, OB, OT, VMIN, VMAX, L, SI;
+		int	  SR, CR, OR, OG, OB, OT, VMIN, VMAX, L, SP;
 		float SMIN, SMAX;
 };
 struct BulletConfig {
 		int	  SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L;
 		float S;
 };
+struct WindowConfig {
+		sf::Vector2u size{0, 0};
+		unsigned int framelimit = 60;
+		bool		 fullscreen = 0;
+};
+struct FontConfig {
+		std::string	 path{};
+		unsigned int size = 12;
+		uint32_t	 colorR;
+		uint32_t	 colorG;
+		uint32_t	 colorB;
+};
 
 class Game {
 	private:
-		sf::RenderWindow m_window;
-		unsigned int	 m_framerateLimit = 60;
+		// sf::RenderWindow m_window{};
+		// sf::Vector2u	 m_windowSize{0, 0};
+		// unsigned int	 m_framerateLimit = 60;
+		// sf::State		 m_windowState = sf::State::Windowed;
+		sf::RenderWindow m_window{};
 		sf::State		 m_windowState = sf::State::Windowed;
-		EntityManager	 m_entities;
-		sf::Font		 m_font;
+		WindowConfig	 m_windowConfig{};
+		sf::Font		 m_font{};
+		sf::Color		 m_fontColor{};
+		FontConfig		 m_fontConfig{};
 		sf::Text		*m_text = nullptr;
-		PlayerConfig	 m_playerConfig;
-		EnemyConfig		 m_enemyConfig;
-		BulletConfig	 m_BulletConfig;
+		EntityManager	 m_entities{};
+		PlayerConfig	 m_playerConfig{};
+		EnemyConfig		 m_enemyConfig{};
+		BulletConfig	 m_BulletConfig{};
 		int				 m_score = 0;
 		size_t			 m_currentFrame = 0;
 		size_t			 m_lastEnemySpawnTime = 0;
 		bool			 m_paused = false;
 		bool			 m_running = true;
 
+		std::random_device m_randomDevice{};
+		std::mt19937	   m_engine{m_randomDevice()};
+
 		std::shared_ptr<Entity> m_player;
 
 		void init(const std::string &path);
-		void setPaused(const bool paused);
 
 		// NOTE: Systems:
 		void sMovement(void);
@@ -53,7 +75,9 @@ class Game {
 		void sLifeSpan(void);
 		void sRender(void);
 		void sEnemySpawner(void);
+
 		void sCollision(void);
+		bool entitiesCollide(const EntityPtr &a, const EntityPtr &b);
 
 		void spawnPlayer(void);
 		void spawnEnemy(void);
@@ -63,12 +87,15 @@ class Game {
 
 		void reset(void);
 
-		// const std::string m_homeDir = std::getenv("HOME");
-		unsigned int m_fontSize = 12;
-		sf::Vector2u windowSize{1920, 1080};
+		void bounceObjectFromWalls(EntityPtr e);
 
-		void bounceObjectsFromWalls(void);
-		void parseConfig(const std::string &config);
+		void  parseConfig(const std::string &config);
+		Vec2  randomVec2InsideWindowBasedOnCollisionRadius(const float radius);
+		float randomFloatWithinRange(float min, float max);
+
+		void reflectObjectVelocity(EntityPtr e, Vec2 surfaceNormal);
+
+		// const std::string m_homeDir = std::getenv("HOME");
 
 	public:
 		Game(const std::string &config);

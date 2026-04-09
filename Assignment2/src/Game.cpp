@@ -9,9 +9,14 @@
 #include <SFML/Window/Mouse.hpp>
 #include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/WindowEnums.hpp>
+#include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
+#include <limits>
 #include <memory>
+#include <random>
+#include <string>
 
 #include "Components.hpp"
 #include "EntityManager.hpp"
@@ -33,14 +38,16 @@ void Game::run(void) {
 	// Some systems should function while paused (rendering)
 	// Some systems shouldn't (movement / input)
 	while (m_running) {
+		if (m_player->isActive() == false)
+			reset();
 		m_entities.update();
 
 		if (!m_paused) {
 			sEnemySpawner();
 			sMovement();
 			sCollision();
-			sUserInput();
 		}
+		sUserInput();
 		sRender();
 
 		// NOTE: increment the current frame
@@ -51,31 +58,108 @@ void Game::run(void) {
 }
 
 void Game::init(const std::string &path) {
-	// TODO: Read in config file here. Use the premade xConfig variables
-	// 	window = sf::RenderWindow(sf::VideoMode(windowSize), "SFML");
 	std::ifstream fin(path);
 
-	// Do this for all structs
-	fin >> m_playerConfig.SR >> m_playerConfig.CR >> m_playerConfig.S >>
-		m_playerConfig.FR >> m_playerConfig.FG >> m_playerConfig.FB >>
-		m_playerConfig.OR >> m_playerConfig.OG >> m_playerConfig.OB >>
-		m_playerConfig.OT >> m_playerConfig.V;
+	std::string label;
+	fin >> label >> m_windowConfig.size.x >> m_windowConfig.size.y >>
+		m_windowConfig.framelimit >> m_windowConfig.fullscreen;
+	if (m_windowConfig.fullscreen) {
+		m_windowState = sf::State::Fullscreen;
+	} else {
+		m_windowState = sf::State::Windowed;
+	}
+	std::cout << "WINDOW CONFIG:\n";
+	std::cout << m_windowConfig.size.x << std::endl;
+	std::cout << m_windowConfig.size.y << std::endl;
+	std::cout << m_windowConfig.framelimit << std::endl;
+	std::cout << m_windowConfig.fullscreen << std::endl;
+	std::cout << "\n";
 
-	// Set up window parameters
-	m_window.create(sf::VideoMode(windowSize), "Geometry Wars",
+	m_window.create(sf::VideoMode(m_windowConfig.size), "Geometry Wars",
 					sf::Style::Default, m_windowState);
-	m_window.setFramerateLimit(m_framerateLimit);
+	m_window.setFramerateLimit(m_windowConfig.framelimit);
 
+	fin >> label >> m_fontConfig.path >> m_fontConfig.size >>
+		m_fontConfig.colorR >> m_fontConfig.colorG >> m_fontConfig.colorB;
+	m_fontColor = sf::Color(static_cast<uint8_t>(m_fontConfig.colorR),
+							static_cast<uint8_t>(m_fontConfig.colorG),
+							static_cast<uint8_t>(m_fontConfig.colorB));
+	std::cout << "FONT CONFIG:\n";
+	std::cout << m_fontConfig.path << std::endl;
+	std::cout << m_fontConfig.size << std::endl;
+	std::cout << (int)m_fontColor.r << std::endl;
+	std::cout << (int)m_fontColor.g << std::endl;
+	std::cout << (int)m_fontColor.b << std::endl;
+	std::cout << "\n";
+
+	// Do this for all structs
+	fin >> label >> m_playerConfig.SR >> m_playerConfig.CR >>
+		m_playerConfig.S >> m_playerConfig.FR >> m_playerConfig.FG >>
+		m_playerConfig.FB >> m_playerConfig.OR >> m_playerConfig.OG >>
+		m_playerConfig.OB >> m_playerConfig.OT >> m_playerConfig.V;
+	std::cout << "PLAYER CONFIG:\n";
+	std::cout << m_playerConfig.SR << std::endl;
+	std::cout << m_playerConfig.CR << std::endl;
+	std::cout << m_playerConfig.S << std::endl;
+	std::cout << m_playerConfig.FR << std::endl;
+	std::cout << m_playerConfig.FG << std::endl;
+	std::cout << m_playerConfig.FB << std::endl;
+	std::cout << m_playerConfig.OR << std::endl;
+	std::cout << m_playerConfig.OG << std::endl;
+	std::cout << m_playerConfig.OB << std::endl;
+	std::cout << m_playerConfig.OT << std::endl;
+	std::cout << m_playerConfig.V << std::endl;
+
+	fin >> label >> m_enemyConfig.SR >> m_enemyConfig.CR >>
+		m_enemyConfig.SMIN >> m_enemyConfig.SMAX >> m_enemyConfig.OR >>
+		m_enemyConfig.OG >> m_enemyConfig.OB >> m_enemyConfig.OT >>
+		m_enemyConfig.VMIN >> m_enemyConfig.VMAX >> m_enemyConfig.L >>
+		m_enemyConfig.SP;
+	std::cout << "ENEMY CONFIG:\n";
+	std::cout << m_enemyConfig.SR << std::endl;
+	std::cout << m_enemyConfig.CR << std::endl;
+	std::cout << m_enemyConfig.SMIN << std::endl;
+	std::cout << m_enemyConfig.SMAX << std::endl;
+	std::cout << m_enemyConfig.OR << std::endl;
+	std::cout << m_enemyConfig.OG << std::endl;
+	std::cout << m_enemyConfig.OB << std::endl;
+	std::cout << m_enemyConfig.OT << std::endl;
+	std::cout << m_enemyConfig.VMIN << std::endl;
+	std::cout << m_enemyConfig.VMAX << std::endl;
+	std::cout << m_enemyConfig.L << std::endl;
+	std::cout << m_enemyConfig.SP << std::endl;
+	std::cout << "\n";
+
+	std::cout << "BULLET CONFIG:\n";
+	fin >> label >> m_BulletConfig.SR >> m_BulletConfig.CR >>
+		m_BulletConfig.S >> m_BulletConfig.FR >> m_BulletConfig.FG >>
+		m_BulletConfig.FB >> m_BulletConfig.OR >> m_BulletConfig.OG >>
+		m_BulletConfig.OB >> m_BulletConfig.OT >> m_BulletConfig.V >>
+		m_BulletConfig.L;
+	std::cout << m_BulletConfig.SR << std::endl;
+	std::cout << m_BulletConfig.CR << std::endl;
+	std::cout << m_BulletConfig.S << std::endl;
+	std::cout << m_BulletConfig.FR << std::endl;
+	std::cout << m_BulletConfig.FG << std::endl;
+	std::cout << m_BulletConfig.FB << std::endl;
+	std::cout << m_BulletConfig.OR << std::endl;
+	std::cout << m_BulletConfig.OG << std::endl;
+	std::cout << m_BulletConfig.OB << std::endl;
+	std::cout << m_BulletConfig.OT << std::endl;
+	std::cout << m_BulletConfig.V << std::endl;
+	std::cout << m_BulletConfig.L;
+	std::cout << "\n";
 	spawnPlayer();
 }
 
 void Game::reset(void) {
-	EntityVec &enemies = m_entities.getEntities("enemy");
-	for (auto &e : enemies)
+	EntityVec entities = m_entities.getEntities();
+	for (auto &e : entities) {
 		e->destroy();
-	m_player->destroy();
+	}
 	spawnPlayer();
 	m_score = 0;
+	m_currentFrame = 0;
 }
 
 // NOTE: Private:
@@ -84,16 +168,18 @@ void Game::sMovement(void) {
 	// FIXME: Move to handle player movement
 	m_player->cTransform->velocity = {0, 0};
 	if (m_player->cInput->up)
-		m_player->cTransform->velocity.y = -5;
+		m_player->cTransform->velocity.y -= m_playerConfig.S;
 	if (m_player->cInput->down)
-		m_player->cTransform->velocity.y = 5;
+		m_player->cTransform->velocity.y += m_playerConfig.S;
 	if (m_player->cInput->left)
-		m_player->cTransform->velocity.x = -5;
+		m_player->cTransform->velocity.x -= m_playerConfig.S;
 	if (m_player->cInput->right)
-		m_player->cTransform->velocity.x = 5;
+		m_player->cTransform->velocity.x += m_playerConfig.S;
 	for (auto &e : m_entities.getEntities()) {
-		if (e->cTransform)
+		if (e->cTransform) {
+			e->cTransform->prevPos = e->cTransform->pos;
 			e->cTransform->pos += e->cTransform->velocity;
+		}
 	}
 }
 
@@ -109,19 +195,28 @@ void Game::sUserInput(void) {
 					m_running = false;
 					break;
 				case sf::Keyboard::Key::W:
+				case sf::Keyboard::Key::Up:
 					m_player->cInput->up = true;
 					break;
 				case sf::Keyboard::Key::A:
+				case sf::Keyboard::Key::Left:
 					m_player->cInput->left = true;
 					break;
 				case sf::Keyboard::Key::S:
+				case sf::Keyboard::Key::Down:
 					m_player->cInput->down = true;
 					break;
 				case sf::Keyboard::Key::D:
+				case sf::Keyboard::Key::Right:
 					m_player->cInput->right = true;
 					break;
 				case sf::Keyboard::Key::R:
-					reset();
+					if (!m_paused) {
+						reset();
+					}
+					break;
+				case sf::Keyboard::Key::P:
+					m_paused = !m_paused;
 					break;
 				default:
 					break;
@@ -130,15 +225,19 @@ void Game::sUserInput(void) {
 		if (const auto *keyReleased = event->getIf<sf::Event::KeyReleased>()) {
 			switch (keyReleased->code) {
 				case sf::Keyboard::Key::W:
+				case sf::Keyboard::Key::Up:
 					m_player->cInput->up = false;
 					break;
 				case sf::Keyboard::Key::A:
+				case sf::Keyboard::Key::Left:
 					m_player->cInput->left = false;
 					break;
 				case sf::Keyboard::Key::S:
+				case sf::Keyboard::Key::Down:
 					m_player->cInput->down = false;
 					break;
 				case sf::Keyboard::Key::D:
+				case sf::Keyboard::Key::Right:
 					m_player->cInput->right = false;
 					break;
 				default:
@@ -178,19 +277,39 @@ void Game::sRender(void) {
 }
 
 void Game::sEnemySpawner(void) {
-	// FIXME: use m_currendFrame - m_lastEnemySpawnTime
-	if (m_currentFrame % 60 == 0)
+	// FIXME: use m_currentFrame - m_lastEnemySpawnTime
+	if (m_currentFrame % m_enemyConfig.SP == 0)
 		spawnEnemy();
 }
 
+bool Game::entitiesCollide(const EntityPtr &a, const EntityPtr &b) {
+	if (!a->isActive() || !b->isActive()) {
+		return (false);
+	}
+	float dist = a->cTransform->pos.dist(b->cTransform->pos);
+	float aR2 = a->cCollision->radius * a->cCollision->radius;
+	float bR2 = b->cCollision->radius * b->cCollision->radius;
+	return (dist * dist <= aR2 + bR2);
+}
+
 void Game::sCollision(void) {
-	for (auto &b : m_entities.getEntities("bullet")) {
-		for (auto &e : m_entities.getEntities("enemy")) {
-			// FIXME: Add logic
-			(void)b;
-			(void)e;
+	for (auto &e : m_entities.getEntities("enemy")) {
+		for (auto &b : m_entities.getEntities("bullet")) {
+			if (entitiesCollide(b, e)) {
+				b->destroy();
+				e->destroy();
+				spawnSmallEnemies(e);
+			}
+		}
+		if (e->isActive()) {
+			if (entitiesCollide(e, m_player)) {
+				m_player->destroy();
+			} else {
+				bounceObjectFromWalls(e);
+			}
 		}
 	}
+	bounceObjectFromWalls(m_player);
 }
 
 void Game::spawnPlayer(void) {
@@ -199,46 +318,54 @@ void Game::spawnPlayer(void) {
 	float middleY = m_window.getSize().y / 2.0f;
 	player->cTransform =
 		new CTransform(Vec2(middleX, middleY), Vec2(1.0f, 1.0f), 0.0f);
-	player->cShape =
-		new CShape(32.0f, 8, sf::Color(10, 10, 10), sf::Color(255, 0, 0), 4.0f);
+	player->cShape = new CShape(
+		m_playerConfig.SR, m_playerConfig.V,
+		sf::Color(m_playerConfig.FR, m_playerConfig.FG, m_playerConfig.FB),
+		sf::Color(m_playerConfig.OR, m_playerConfig.OG, m_playerConfig.OB),
+		m_playerConfig.OT);
+	player->cCollision = new CCollision(m_playerConfig.CR);
 	player->cInput = new CInput();
 
 	m_player = player;
 }
 
 void Game::spawnEnemy(void) {
-	// Make sure enemy is spawned according to m_enemyConfig
-	// Must be completely within window
 	auto enemy = m_entities.addEntity("enemy");
 
-	// randomize position
-	float ex = std::rand() % m_window.getSize().x;
-	float ey = std::rand() % m_window.getSize().y;
+	Vec2 randomPos =
+		randomVec2InsideWindowBasedOnCollisionRadius(m_enemyConfig.CR);
+	while (m_player->cTransform->pos.dist(randomPos) < m_playerConfig.CR * 2) {
+		randomPos =
+			randomVec2InsideWindowBasedOnCollisionRadius(m_enemyConfig.CR);
+	}
 
-	// randomize velocity vector (direction) based on speed
-	float rdx = 1.0f;
-	float rdy = 1.0f;
+	Vec2 randomVelocity(
+		randomFloatWithinRange(-static_cast<int>(m_window.getSize().x),
+							   static_cast<int>(m_window.getSize().x)),
+		randomFloatWithinRange(-static_cast<int>(m_window.getSize().y),
+							   static_cast<int>(m_window.getSize().y)));
+	randomVelocity.normalize();
+	randomVelocity *=
+		randomFloatWithinRange(m_enemyConfig.SMIN, m_enemyConfig.SMAX);
 
-	enemy->cTransform = new CTransform(Vec2(ex, ey), Vec2(rdx, rdy), 0.0f);
+	enemy->cTransform = new CTransform(randomPos, randomVelocity, 0.0f);
 
 	// randomize vertices based on VMIN and VMAX
-	int vertices = 4;
+	std::uniform_int_distribution<std::mt19937::result_type>
+		randomVerticesCount(m_enemyConfig.VMIN, m_enemyConfig.VMAX);
+	int vertices = randomVerticesCount(m_randomDevice);
 
-	m_enemyConfig.SR = 32.0f;
-	m_enemyConfig.OR = 255;
-	m_enemyConfig.OG = 0;
-	m_enemyConfig.OB = 0;
-	m_enemyConfig.OT = 0;
 	enemy->cShape = new CShape(
-		m_enemyConfig.SR, vertices,
-		sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB),
+		m_enemyConfig.SR, vertices, sf::Color(0, 0, 0),
 		sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB),
 		m_enemyConfig.OT);
+	enemy->cCollision = new CCollision(m_enemyConfig.CR);
 
 	m_lastEnemySpawnTime = m_currentFrame;
 }
 
 void Game::spawnSmallEnemies(std::shared_ptr<Entity> &entity) {
+	std::cout << "Spawn small enemies" << std::endl;
 	(void)entity;
 }
 
@@ -247,6 +374,7 @@ void Game::spawnBullet(std::shared_ptr<Entity> &entity, const Vec2 &mousePos) {
 	bullet->cTransform = new CTransform(mousePos, Vec2(0, 0), 0);
 	bullet->cShape =
 		new CShape(10, 8, sf::Color(255, 255, 255), sf::Color(255, 0, 0), 2);
+	bullet->cCollision = new CCollision(10);
 	(void)entity;
 }
 
@@ -255,90 +383,45 @@ void Game::spawnSpecialWeapon(std::shared_ptr<Entity> &entity) {
 	(void)entity;
 }
 
-void Game::bounceObjectsFromWalls(void) {
-	// unsigned int screenWidth = windowSize.x;
-	// unsigned int screenHeight = windowSize.y;
-
-	// for (auto &object : _objects) {
-	// 	float xSize = object.getShape().getLocalBounds().size.x / 2.0f;
-	// 	float ySize = object.getShape().getLocalBounds().size.y / 2.0f;
-	// 	if (object.getPosition().x - xSize <= 0)
-	// 		object.setHSpeed(object.getHSpeed() * -1);
-	// 	if (object.getPosition().y - ySize <= 0)
-	// 		object.setVSpeed(object.getVSpeed() * -1);
-	// 	if (object.getPosition().x + xSize >= screenWidth)
-	// 		object.setHSpeed(object.getHSpeed() * -1);
-	// 	if (object.getPosition().y + ySize >= screenHeight)
-	// 		object.setVSpeed(object.getVSpeed() * -1);
-	// }
+float Game::randomFloatWithinRange(float min, float max) {
+	return (std::uniform_real_distribution<float>{min, max}(m_engine));
 }
 
-// void Game::init(const std::string &configFilePath) {
-// 	std::ifstream configFile(configFilePath);
-// 	std::string	  token;
-// 	if (!configFile)
-// 		throw std::runtime_error("Couldn't open config file");
-// 	{
-// 		configFile >> token;
-// 		if (token == "Window") {
-// 			unsigned int windowWidth;
-// 			unsigned int windowHeight;
-// 			configFile >> windowWidth >> windowHeight;
-// 			windowSize = sf::Vector2u(windowWidth, windowHeight);
-// 		} else
-// 			throw std::runtime_error("Missing window configurations");
-// 	}
-// 	{
-// 		configFile >> token;
-// 		if (token == "Font") {
-// 			std::string	 fontPath;
-// 			unsigned int fontSize;
-// 			unsigned int red;
-// 			unsigned int green;
-// 			unsigned int blue;
-// 			configFile >> fontPath >> fontSize >> red >> green >> blue;
-// 			if (!m_font.openFromFile(fontPath)) {
-// 				throw std::runtime_error("Couldn't open font");
-// 			}
-// 			m_fontSize = fontSize;
-// 		} else
-// 			throw std::runtime_error("Missing font configurations");
-// 	}
-// 	while (configFile >> token) {
-// 		if (token == "Circle" || token == "Rectangle") {
-// 			// Object::ShapeType type;
-// 			std::string	 shapeName;
-// 			unsigned int width;
-// 			unsigned int height;
-// 			float		 xSpeed;
-// 			float		 ySpeed;
-// 			unsigned int red;
-// 			unsigned int green;
-// 			unsigned int blue;
-// 			unsigned int extra;
-// 			// if (token == "Circle")
-// 			// type = Object::ShapeType::CIRCLE;
-// 			// else
-// 			// type = Object::ShapeType::RECTANGLE;
-// 			if (!(configFile >> shapeName >> width >> height >> xSpeed >>
-// 				  ySpeed >> red >> green >> blue >> extra)) {
-// 				throw std::runtime_error(
-// 					"Malformed " + token +
-// 					" config: missing or invalid attributes for " + shapeName);
-// 			}
-// 			// configFile >> shapeName >> width >> height >> xSpeed >> ySpeed >>
-// 			// 	red >> green >> blue >> extra;
-// 			// _objects.emplace_back(Object(
-// 			// 	type, sf::Vector2f(windowSize.x / 2.0f, windowSize.y / 2.0f),
-// 			// 	_font, _fontSize, shapeName, width, height, xSpeed, ySpeed, red,
-// 			// 	green, blue));
-// 		} else
-// 			throw std::runtime_error("Unexpected token " + token);
-// 	}
-// 	// if (windowSize.x > 0 && windowSize.y > 0 && _objects.size() > 0) {
-// 	// 	window = sf::RenderWindow(sf::VideoMode(windowSize), "SFML");
-// 	// 	window.setFramerateLimit(60);
-// 	// } else {
-// 	// 	throw std::runtime_error("Invalid config file");
-// 	// }
-// }
+Vec2 Game::randomVec2InsideWindowBasedOnCollisionRadius(const float radius) {
+	int r = std::ceil(radius);
+	std::uniform_int_distribution<std::mt19937::result_type> distWidth(
+		r, m_windowConfig.size.x - r);
+	std::uniform_int_distribution<std::mt19937::result_type> distHeight(
+		r, m_windowConfig.size.y - r);
+	return (Vec2(distWidth(m_randomDevice), distHeight(m_randomDevice)));
+}
+
+void Game::reflectObjectVelocity(EntityPtr e, Vec2 surfaceNormal) {
+	surfaceNormal.normalize();
+	float dotProduct = dot(e->cTransform->velocity, surfaceNormal);
+	e->cTransform->velocity -= 2 * (dotProduct)*surfaceNormal;
+}
+
+void Game::bounceObjectFromWalls(EntityPtr e) {
+	unsigned int screenWidth = m_windowConfig.size.x;
+	unsigned int screenHeight = m_windowConfig.size.y;
+
+	float xSize = e->cShape->circle.getLocalBounds().size.x / 2.0f;
+	float ySize = e->cShape->circle.getLocalBounds().size.y / 2.0f;
+	if (e->cTransform->pos.x - xSize <= 0) {
+		e->cTransform->pos.x = e->cTransform->prevPos.x;
+		reflectObjectVelocity(e, Vec2(1, 0));
+	}
+	if (e->cTransform->pos.y - ySize <= 0) {
+		e->cTransform->pos.y = e->cTransform->prevPos.y;
+		reflectObjectVelocity(e, Vec2(0, 1));
+	}
+	if (e->cTransform->pos.x + xSize >= screenWidth) {
+		e->cTransform->pos.x = e->cTransform->prevPos.x;
+		reflectObjectVelocity(e, Vec2(-1, 0));
+	}
+	if (e->cTransform->pos.y + ySize >= screenHeight) {
+		e->cTransform->pos.y = e->cTransform->prevPos.y;
+		reflectObjectVelocity(e, Vec2(0, -1));
+	}
+}

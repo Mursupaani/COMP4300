@@ -115,6 +115,11 @@ Vec2 operator*(const float scalar, const Vec2 &vec) {
 	return (Vec2(scalar * vec.x, scalar * vec.y));
 }
 
+// NOTE: Non class functions:
+float dot(Vec2 v1, Vec2 v2) {
+	return (v1.x * v2.x + v1.y * v2.y);
+}
+
 std::ostream &operator<<(std::ostream &stream, const Vec2 &vec) {
 	return (stream << "{" << vec.x << ", " << vec.y << "}");
 }
