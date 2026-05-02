@@ -43,6 +43,7 @@ void Game::run(void) {
 		m_entities.update();
 
 		if (!m_paused) {
+			sLifeSpan();
 			sEnemySpawner();
 			sMovement();
 			sCollision();
@@ -259,6 +260,12 @@ void Game::sUserInput(void) {
 }
 
 void Game::sLifeSpan(void) {
+	for (auto e : m_entities.getEntities("bullet")) {
+		--e->cLifespan->remaining;
+		if (e->cLifespan->remaining < 1) {
+			e->destroy();
+		}
+	}
 	// FIXME: Add logic
 }
 
@@ -271,6 +278,15 @@ void Game::sRender(void) {
 		e->cTransform->angle += 1.0f;
 		sf::Angle angle = sf::degrees(e->cTransform->angle);
 		e->cShape->circle.setRotation(angle);
+		if (e->cLifespan) {
+			sf::Color fillColor = e->cShape->circle.getFillColor();
+			sf::Color outlineColor = e->cShape->circle.getOutlineColor();
+			fillColor.a = 255 * e->cLifespan->remaining / e->cLifespan->total;
+			outlineColor.a =
+				255 * e->cLifespan->remaining / e->cLifespan->total;
+			e->cShape->circle.setFillColor(fillColor);
+			e->cShape->circle.setOutlineColor(outlineColor);
+		}
 		m_window.draw(e->cShape->circle);
 	}
 	m_window.display();
@@ -375,6 +391,7 @@ void Game::spawnBullet(std::shared_ptr<Entity> &entity, const Vec2 &mousePos) {
 	bullet->cShape =
 		new CShape(10, 8, sf::Color(255, 255, 255), sf::Color(255, 0, 0), 2);
 	bullet->cCollision = new CCollision(10);
+	bullet->cLifespan = new CLifespan(60);
 	(void)entity;
 }
 
