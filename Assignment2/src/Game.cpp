@@ -266,7 +266,6 @@ void Game::sLifeSpan(void) {
 			e->destroy();
 		}
 	}
-	// FIXME: Add logic
 }
 
 void Game::sRender(void) {
@@ -356,10 +355,10 @@ void Game::spawnEnemy(void) {
 	}
 
 	Vec2 randomVelocity(
-		randomFloatWithinRange(-static_cast<int>(m_window.getSize().x),
-							   static_cast<int>(m_window.getSize().x)),
-		randomFloatWithinRange(-static_cast<int>(m_window.getSize().y),
-							   static_cast<int>(m_window.getSize().y)));
+		randomFloatWithinRange(-static_cast<float>(m_window.getSize().x),
+							   static_cast<float>(m_window.getSize().x)),
+		randomFloatWithinRange(-static_cast<float>(m_window.getSize().y),
+							   static_cast<float>(m_window.getSize().y)));
 	randomVelocity.normalize();
 	randomVelocity *=
 		randomFloatWithinRange(m_enemyConfig.SMIN, m_enemyConfig.SMAX);
@@ -387,12 +386,17 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> &entity) {
 
 void Game::spawnBullet(std::shared_ptr<Entity> &entity, const Vec2 &mousePos) {
 	auto bullet = m_entities.addEntity("bullet");
-	bullet->cTransform = new CTransform(mousePos, Vec2(0, 0), 0);
-	bullet->cShape =
-		new CShape(10, 8, sf::Color(255, 255, 255), sf::Color(255, 0, 0), 2);
-	bullet->cCollision = new CCollision(10);
-	bullet->cLifespan = new CLifespan(60);
-	(void)entity;
+	bullet->cTransform = new CTransform(entity->cTransform->pos, Vec2(0, 0), 0);
+	bullet->cTransform->velocity = (mousePos - entity->cTransform->pos)
+									   .normalize()
+									   .scale(m_BulletConfig.S);
+	bullet->cShape = new CShape(
+		m_BulletConfig.SR, m_BulletConfig.V,
+		sf::Color(m_BulletConfig.FR, m_BulletConfig.FG, m_BulletConfig.FB),
+		sf::Color(m_BulletConfig.OR, m_BulletConfig.OG, m_BulletConfig.OB),
+		m_BulletConfig.OT);
+	bullet->cCollision = new CCollision(m_BulletConfig.CR);
+	bullet->cLifespan = new CLifespan(m_BulletConfig.L);
 }
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> &entity) {
