@@ -10,12 +10,15 @@
 #include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/WindowEnums.hpp>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <limits>
 #include <memory>
 #include <random>
+#include <ranges>
+#include <stdexcept>
 #include <string>
 
 #include "Components.hpp"
@@ -29,14 +32,11 @@ Game::Game(const std::string &config) {
 }
 
 Game::~Game(void) {
-	if (m_text)
-		delete m_text;
+	if (m_scoreText)
+		delete m_scoreText;
 }
 
 void Game::run(void) {
-	// TODO: add pause functionality
-	// Some systems should function while paused (rendering)
-	// Some systems shouldn't (movement / input)
 	while (m_running) {
 		if (m_player->isActive() == false)
 			reset();
@@ -92,6 +92,24 @@ void Game::init(const std::string &path) {
 	std::cout << (int)m_fontColor.g << std::endl;
 	std::cout << (int)m_fontColor.b << std::endl;
 	std::cout << "\n";
+	if (!m_font.openFromFile(m_fontConfig.path)) {
+		throw std::runtime_error("Couldn't open font: " + m_fontConfig.path);
+	}
+	m_scoreText = new sf::Text(m_font);
+	m_scoreText->setString("Score: " + std::to_string(m_score));
+	m_scoreText->setCharacterSize(m_fontConfig.size);
+	m_scoreText->setFillColor(
+		sf::Color(m_fontColor.r, m_fontColor.g, m_fontColor.b));
+	m_scoreText->setPosition(
+		sf::Vector2f(m_fontConfig.size, m_fontConfig.size));
+	m_specialText = new sf::Text(m_font);
+	m_specialText->setString("Special");
+	m_specialText->setCharacterSize(m_fontConfig.size);
+	m_specialText->setFillColor(sf::Color::Green);
+	m_specialText->setPosition(sf::Vector2f(
+		m_window.getSize().x - m_specialText->getLocalBounds().size.x -
+			m_fontConfig.size,
+		m_fontConfig.size));
 
 	// Do this for all structs
 	fin >> label >> m_playerConfig.SR >> m_playerConfig.CR >>
@@ -161,6 +179,9 @@ void Game::reset(void) {
 	spawnPlayer();
 	m_score = 0;
 	m_currentFrame = 0;
+	m_lastEnemySpawnTime = 0;
+	m_lastSpecialUse = 0;
+	m_specialAvailable = true;
 }
 
 // NOTE: Private:
@@ -250,20 +271,35 @@ void Game::sUserInput(void) {
 			Vec2 mousePos(sf::Mouse::getPosition(m_window).x,
 						  sf::Mouse::getPosition(m_window).y);
 			if (mouseButton->button == sf::Mouse::Button::Left) {
-				spawnBullet(m_player, mousePos);
+				Vec2 direction(mousePos - m_player->cTransform->pos);
+				spawnBullet(m_player, direction);
 			}
 			if (mouseButton->button == sf::Mouse::Button::Right) {
-				spawnSpecialWeapon(m_player);
+				if (m_specialAvailable) {
+					spawnSpecialWeapon(m_player, mousePos);
+				}
 			}
 		}
 	}
 }
 
 void Game::sLifeSpan(void) {
-	for (auto e : m_entities.getEntities("bullet")) {
-		--e->cLifespan->remaining;
-		if (e->cLifespan->remaining < 1) {
-			e->destroy();
+	for (auto b : m_entities.getEntities("bullet")) {
+		--b->cLifespan->remaining;
+		if (b->cLifespan->remaining < 1) {
+			b->destroy();
+		}
+	}
+	for (auto s : m_entities.getEntities("small")) {
+		--s->cLifespan->remaining;
+		if (s->cLifespan->remaining < 1) {
+			s->destroy();
+		}
+	}
+	if (m_specialAvailable == false) {
+		m_specialCooldown = m_currentFrame - m_lastSpecialUse;
+		if (m_specialCooldown % 600 == 0) {
+			m_specialAvailable = true;
 		}
 	}
 }
@@ -288,11 +324,18 @@ void Game::sRender(void) {
 		}
 		m_window.draw(e->cShape->circle);
 	}
+	m_scoreText->setString("Score: " + std::to_string(m_score));
+	if (m_specialAvailable) {
+		m_specialText->setFillColor(sf::Color::Green);
+	} else {
+		m_specialText->setFillColor(sf::Color::Red);
+	}
+	m_window.draw(*m_scoreText);
+	m_window.draw(*m_specialText);
 	m_window.display();
 }
 
 void Game::sEnemySpawner(void) {
-	// FIXME: use m_currentFrame - m_lastEnemySpawnTime
 	if (m_currentFrame % m_enemyConfig.SP == 0)
 		spawnEnemy();
 }
@@ -311,6 +354,7 @@ void Game::sCollision(void) {
 	for (auto &e : m_entities.getEntities("enemy")) {
 		for (auto &b : m_entities.getEntities("bullet")) {
 			if (entitiesCollide(b, e)) {
+				m_score += e->cScore->score;
 				b->destroy();
 				e->destroy();
 				spawnSmallEnemies(e);
@@ -321,6 +365,22 @@ void Game::sCollision(void) {
 				m_player->destroy();
 			} else {
 				bounceObjectFromWalls(e);
+			}
+		}
+	}
+	for (auto &s : m_entities.getEntities("small")) {
+		for (auto &b : m_entities.getEntities("bullet")) {
+			if (entitiesCollide(b, s)) {
+				m_score += s->cScore->score;
+				b->destroy();
+				s->destroy();
+			}
+		}
+		if (s->isActive()) {
+			if (entitiesCollide(s, m_player)) {
+				m_player->destroy();
+			} else {
+				bounceObjectFromWalls(s);
 			}
 		}
 	}
@@ -376,20 +436,42 @@ void Game::spawnEnemy(void) {
 		m_enemyConfig.OT);
 	enemy->cCollision = new CCollision(m_enemyConfig.CR);
 
+	enemy->cScore = new CScore(vertices);
+
 	m_lastEnemySpawnTime = m_currentFrame;
 }
 
 void Game::spawnSmallEnemies(std::shared_ptr<Entity> &entity) {
-	std::cout << "Spawn small enemies" << std::endl;
-	(void)entity;
+	size_t pointCount = entity->cShape->circle.getPointCount();
+	Vec2  &origin = entity->cTransform->pos;
+	float  theta = 360.0f / pointCount;
+	float  angle{};
+	for (size_t i = 0; i < pointCount; ++i) {
+		auto enemy = m_entities.addEntity("small");
+		Vec2 velocity = entity->cTransform->velocity;
+		velocity.rotate(entity->cTransform->angle + angle);
+
+		enemy->cTransform = new CTransform(origin, velocity, 0.0f);
+
+		enemy->cShape = new CShape(
+			m_enemyConfig.SR / 2.0f, pointCount, sf::Color(0, 0, 0),
+			sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB),
+			m_enemyConfig.OT);
+		enemy->cCollision = new CCollision(m_enemyConfig.CR / 2.0f);
+		enemy->cLifespan = new CLifespan(m_enemyConfig.L);
+		enemy->cScore = new CScore(pointCount * 2);
+
+		m_lastEnemySpawnTime = m_currentFrame;
+		angle += theta;
+	}
 }
 
-void Game::spawnBullet(std::shared_ptr<Entity> &entity, const Vec2 &mousePos) {
-	auto bullet = m_entities.addEntity("bullet");
-	bullet->cTransform = new CTransform(entity->cTransform->pos, Vec2(0, 0), 0);
-	bullet->cTransform->velocity = (mousePos - entity->cTransform->pos)
-									   .normalize()
-									   .scale(m_BulletConfig.S);
+void Game::spawnBullet(std::shared_ptr<Entity> &entity, Vec2 &direction) {
+	auto  bullet = m_entities.addEntity("bullet");
+	Vec2 &origin = entity->cTransform->pos;
+	bullet->cTransform = new CTransform(origin, Vec2(0, 0), 0);
+	bullet->cTransform->velocity =
+		direction.normalize().scale(m_BulletConfig.S);
 	bullet->cShape = new CShape(
 		m_BulletConfig.SR, m_BulletConfig.V,
 		sf::Color(m_BulletConfig.FR, m_BulletConfig.FG, m_BulletConfig.FB),
@@ -399,9 +481,19 @@ void Game::spawnBullet(std::shared_ptr<Entity> &entity, const Vec2 &mousePos) {
 	bullet->cLifespan = new CLifespan(m_BulletConfig.L);
 }
 
-void Game::spawnSpecialWeapon(std::shared_ptr<Entity> &entity) {
-	std::cout << "SPECIAL\n";
-	(void)entity;
+void Game::spawnSpecialWeapon(std::shared_ptr<Entity> &entity,
+							  const Vec2			  &mousePos) {
+	entity->cTransform->pos = mousePos;
+	size_t pointCount = entity->cShape->circle.getPointCount();
+	Vec2   shootDirection(entity->cTransform->prevPos);
+	shootDirection.rotate(entity->cTransform->angle);
+	float theta = 360.0f / pointCount;
+	for (size_t i = 0; i < pointCount; ++i) {
+		spawnBullet(entity, shootDirection);
+		shootDirection.rotate(theta);
+	}
+	m_lastSpecialUse = m_currentFrame;
+	m_specialAvailable = false;
 }
 
 float Game::randomFloatWithinRange(float min, float max) {

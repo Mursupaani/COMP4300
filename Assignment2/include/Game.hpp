@@ -41,26 +41,27 @@ struct FontConfig {
 
 class Game {
 	private:
-		// sf::RenderWindow m_window{};
-		// sf::Vector2u	 m_windowSize{0, 0};
-		// unsigned int	 m_framerateLimit = 60;
-		// sf::State		 m_windowState = sf::State::Windowed;
 		sf::RenderWindow m_window{};
 		sf::State		 m_windowState = sf::State::Windowed;
 		WindowConfig	 m_windowConfig{};
 		sf::Font		 m_font{};
 		sf::Color		 m_fontColor{};
 		FontConfig		 m_fontConfig{};
-		sf::Text		*m_text = nullptr;
+		sf::Text		*m_scoreText = nullptr;
+		sf::Text		*m_specialText = nullptr;
 		EntityManager	 m_entities{};
 		PlayerConfig	 m_playerConfig{};
 		EnemyConfig		 m_enemyConfig{};
 		BulletConfig	 m_BulletConfig{};
 		int				 m_score = 0;
-		size_t			 m_currentFrame = 0;
-		size_t			 m_lastEnemySpawnTime = 0;
 		bool			 m_paused = false;
 		bool			 m_running = true;
+
+		size_t m_currentFrame = 0;
+		size_t m_lastEnemySpawnTime = 0;
+		size_t m_lastSpecialUse = 0;
+		size_t m_specialCooldown = 0;
+		bool   m_specialAvailable = true;
 
 		std::random_device m_randomDevice{};
 		std::mt19937	   m_engine{m_randomDevice()};
@@ -82,8 +83,9 @@ class Game {
 		void spawnPlayer(void);
 		void spawnEnemy(void);
 		void spawnSmallEnemies(std::shared_ptr<Entity> &entity);
-		void spawnBullet(std::shared_ptr<Entity> &entity, const Vec2 &mousePos);
-		void spawnSpecialWeapon(std::shared_ptr<Entity> &entity);
+		void spawnBullet(std::shared_ptr<Entity> &entity, Vec2 &direction);
+		void spawnSpecialWeapon(std::shared_ptr<Entity> &entity,
+								const Vec2				&mousePos);
 
 		void reset(void);
 
@@ -94,8 +96,6 @@ class Game {
 		float randomFloatWithinRange(float min, float max);
 
 		void reflectObjectVelocity(EntityPtr e, Vec2 surfaceNormal);
-
-		// const std::string m_homeDir = std::getenv("HOME");
 
 	public:
 		Game(const std::string &config);

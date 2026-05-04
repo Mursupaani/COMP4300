@@ -13,6 +13,10 @@
  */
 
 int main(void) {
-	Game game("config.txt");
-	game.run();
+	try {
+		Game game("config.txt");
+		game.run();
+	} catch (std::exception &e) {
+		std::cerr << e.what() << std::endl;
+	}
 }
