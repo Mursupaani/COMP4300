@@ -1,19 +1,15 @@
 #include "Clock.hpp"
 
-Clock::Clock(void) {}
+#include <chrono>
 
-Clock::Clock(const Clock &other) {
-	(void)other;
+Clock::Clock(void) {
+	m_start = std::chrono::steady_clock::now();
 }
 
-Clock &Clock::operator=(const Clock &other) {
-	if (this == &other)
-		return (*this);
-	return (*this);
+const std::chrono::steady_clock::time_point &Clock::getStartTime(void) const {
+	return (m_start);
 }
-Clock::~Clock(void) {}
 
-std::ostream &operator<<(std::ostream &stream, const Clock &clock) {
-	(void)clock;
-	return (stream);
+void Clock::reset(void) {
+	m_start = std::chrono::steady_clock::now();
 }

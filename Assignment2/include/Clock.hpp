@@ -1,15 +1,16 @@
 #pragma once
-#include <iostream>
-#include <ostream>
-#include <string>
+#include <chrono>
 
 class Clock {
-	private:
 	public:
 		Clock(void);
-		Clock(const Clock &other);
-		Clock &operator=(const Clock &other);
-		~Clock(void);
-};
+		Clock(const Clock &other) = delete;
+		Clock &operator=(const Clock &other) = delete;
+		~Clock(void) = default;
 
-std::ostream &operator<<(std::ostream &stream, const Clock &vec);
+		const std::chrono::steady_clock::time_point &getStartTime(void) const;
+		void										 reset(void);
+
+	private:
+		std::chrono::steady_clock::time_point m_start;
+};

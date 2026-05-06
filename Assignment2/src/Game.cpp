@@ -9,6 +9,7 @@
 #include <SFML/Window/Mouse.hpp>
 #include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/WindowEnums.hpp>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -21,6 +22,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "Clock.hpp"
 #include "Components.hpp"
 #include "EntityManager.hpp"
 #include "Vec2.hpp"
@@ -37,6 +39,7 @@ Game::~Game(void) {
 }
 
 void Game::run(void) {
+	m_clock.reset();
 	while (m_running) {
 		if (m_player->isActive() == false)
 			reset();
@@ -105,6 +108,7 @@ void Game::init(const std::string &path) {
 		sf::Color(m_fontColor.r, m_fontColor.g, m_fontColor.b));
 	m_scoreText->setPosition(
 		sf::Vector2f(m_fontConfig.size, m_fontConfig.size));
+
 	m_specialText = new sf::Text(m_font);
 	m_specialText->setString("Special");
 	m_specialText->setCharacterSize(m_fontConfig.size);
@@ -113,6 +117,14 @@ void Game::init(const std::string &path) {
 		m_window.getSize().x - m_specialText->getLocalBounds().size.x -
 			m_fontConfig.size,
 		m_fontConfig.size));
+
+	m_timeText = new sf::Text(m_font);
+	m_timeText->setString("Score: " + std::to_string(m_score));
+	m_timeText->setCharacterSize(m_fontConfig.size);
+	m_timeText->setFillColor(
+		sf::Color(m_fontColor.r, m_fontColor.g, m_fontColor.b));
+	m_timeText->setPosition(
+		sf::Vector2f(m_window.getSize().x / 2.0f, m_fontConfig.size));
 
 	// Do this for all structs
 	fin >> label >> m_playerConfig.SR >> m_playerConfig.CR >>
@@ -185,6 +197,7 @@ void Game::reset(void) {
 	m_lastEnemySpawnTime = 0;
 	m_lastSpecialUse = 0;
 	m_specialAvailable = true;
+	m_clock.reset();
 }
 
 // NOTE: Private:
@@ -355,12 +368,19 @@ void Game::sRender(void) {
 		}
 		m_window.draw(e->cShape->circle);
 	}
+
+	auto duration = std::chrono::duration_cast<std::chrono::seconds>(
+		std::chrono::steady_clock::now() - m_clock.getStartTime());
+	m_timeText->setString(std::to_string(duration.count()));
+
 	m_scoreText->setString("Score: " + std::to_string(m_score));
+
 	if (m_specialAvailable) {
 		m_specialText->setFillColor(sf::Color::Green);
 	} else {
 		m_specialText->setFillColor(sf::Color::Red);
 	}
+	m_window.draw(*m_timeText);
 	m_window.draw(*m_scoreText);
 	m_window.draw(*m_specialText);
 	m_window.display();

@@ -2,6 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/Window/WindowEnums.hpp>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -11,6 +12,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "Clock.hpp"
 #include "EntityManager.hpp"
 #include "Vec2.hpp"
 
@@ -48,6 +50,7 @@ class Game {
 		sf::Color		 m_fontColor{};
 		FontConfig		 m_fontConfig{};
 		sf::Text		*m_scoreText = nullptr;
+		sf::Text		*m_timeText = nullptr;
 		sf::Text		*m_specialText = nullptr;
 		EntityManager	 m_entities{};
 		PlayerConfig	 m_playerConfig{};
@@ -56,6 +59,8 @@ class Game {
 		int				 m_score = 0;
 		bool			 m_paused = false;
 		bool			 m_running = true;
+
+		Clock m_clock{};
 
 		size_t m_currentFrame = 0;
 		size_t m_lastEnemySpawnTime = 0;
