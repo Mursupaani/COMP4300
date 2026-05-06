@@ -296,11 +296,13 @@ void Game::sUserInput(void) {
 			}
 		}
 	}
-	if (m_player->cInput->shoot) {
+	if (m_shootAvailable == false) {
 		m_shootCooldown = m_currentFrame - m_lastShoot;
 		if (m_shootCooldown % 15 == 0) {
 			m_shootAvailable = true;
 		}
+	}
+	if (m_player->cInput->shoot) {
 		if (m_shootAvailable) {
 			Vec2 mousePos(sf::Mouse::getPosition(m_window).x,
 						  sf::Mouse::getPosition(m_window).y);
