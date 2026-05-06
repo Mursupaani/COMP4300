@@ -61,6 +61,9 @@ void Game::run(void) {
 void Game::init(const std::string &path) {
 	std::ifstream fin(path);
 
+	if (!fin) {
+		throw std::runtime_error("File " + path + " not found.");
+	}
 	std::string label;
 	fin >> label >> m_windowConfig.size.x >> m_windowConfig.size.y >>
 		m_windowConfig.framelimit >> m_windowConfig.fullscreen;
@@ -206,7 +209,6 @@ void Game::sMovement(void) {
 }
 
 void Game::sUserInput(void) {
-	// FIXME: Handle user input
 	while (const std::optional event = m_window.pollEvent()) {
 		if (event->is<sf::Event::Closed>()) {
 			m_running = false;
@@ -268,17 +270,44 @@ void Game::sUserInput(void) {
 		}
 		if (const auto *mouseButton =
 				event->getIf<sf::Event::MouseButtonPressed>()) {
+			switch (mouseButton->button) {
+				case sf::Mouse::Button::Left:
+					m_player->cInput->shoot = true;
+					break;
+				case sf::Mouse::Button::Right:
+					if (m_specialAvailable) {
+						Vec2 mousePos(sf::Mouse::getPosition(m_window).x,
+									  sf::Mouse::getPosition(m_window).y);
+						spawnSpecialWeapon(m_player, mousePos);
+					}
+					break;
+				default:
+					break;
+			}
+		}
+		if (const auto *mouseButtonRelease =
+				event->getIf<sf::Event::MouseButtonReleased>()) {
+			switch (mouseButtonRelease->button) {
+				case sf::Mouse::Button::Left:
+					m_player->cInput->shoot = false;
+					break;
+				default:
+					break;
+			}
+		}
+	}
+	if (m_player->cInput->shoot) {
+		m_shootCooldown = m_currentFrame - m_lastShoot;
+		if (m_shootCooldown % 15 == 0) {
+			m_shootAvailable = true;
+		}
+		if (m_shootAvailable) {
 			Vec2 mousePos(sf::Mouse::getPosition(m_window).x,
 						  sf::Mouse::getPosition(m_window).y);
-			if (mouseButton->button == sf::Mouse::Button::Left) {
-				Vec2 direction(mousePos - m_player->cTransform->pos);
-				spawnBullet(m_player, direction);
-			}
-			if (mouseButton->button == sf::Mouse::Button::Right) {
-				if (m_specialAvailable) {
-					spawnSpecialWeapon(m_player, mousePos);
-				}
-			}
+			Vec2 direction(mousePos - m_player->cTransform->pos);
+			spawnBullet(m_player, direction);
+			m_lastShoot = m_currentFrame;
+			m_shootAvailable = false;
 		}
 	}
 }

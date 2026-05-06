@@ -59,6 +59,9 @@ class Game {
 
 		size_t m_currentFrame = 0;
 		size_t m_lastEnemySpawnTime = 0;
+		size_t m_lastShoot = 0;
+		size_t m_shootCooldown = 0;
+		bool   m_shootAvailable = true;
 		size_t m_lastSpecialUse = 0;
 		size_t m_specialCooldown = 0;
 		bool   m_specialAvailable = true;
