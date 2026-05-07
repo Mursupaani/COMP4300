@@ -1,0 +1,29 @@
+SFMLGame
+▷ References
+▷ External Dependencies
+TODO
+Animation.cpp
+Physics.cpp
+Scene Play.cpp
+
+Action.cpp
+Action.h
+Animation.h
+Assets.cpp
+Assets.h
+Components.h
+Entity.cpp
+Entity.h
+EntityManager.cpp
+EntityManager.h
+GameEngine.cpp
+GameEngine.h
+main.cpp
+Physics.h
+Scene.cpp
+Scene.h
+Scene_Menu.cpp
+Scene_Menu.h
+Scene_Play.h
+Vec2.cpp
+Vec2.h

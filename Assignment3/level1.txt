@@ -1,0 +1,21 @@
+Tile Ground 00
+Tile Ground 10
+Tile Ground 20
+Dec Bush Big 0 1
+Tile Ground 30
+Tile Ground 40
+Tile Ground 50
+Tile Ground 60
+Tile Ground 70
+Tile Ground 80
+Tile Ground 90
+Tile Ground 10 0
+Tile Ground 11 0
+Tile Ground 120
+Tile PipeTall 150
+Tile PipeTall 21 0
+Tile Ground 13 0
+Tile Ground 14 0
+Dec CloudBig 13 8
+Tile Ground 15 0
+Tile Ground 16 0

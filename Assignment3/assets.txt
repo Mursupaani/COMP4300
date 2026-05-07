@@ -1,0 +1,22 @@
+Texture TexStand images/megaman/stand64.png
+Texture TexRun images/megaman/run64.png
+Texture TexAir images/megaman/air64.png
+Texture TexBuster images/megaman/buster.png
+Texture TexExplode images/misc/explosion128.png
+Texture TexCoin images/misc/coinspin.png
+Texture TexBrick images/mario/brick.png
+Texture TexQ images/mario/qfade.png
+Texture TexQ2 images/mario/question2.png
+Texture TexPipes images/mario/pipesmall.png
+Texture TexPipeT images/mario/pipetall.png
+Texture TexCloudB images/mario/cloudbig.png
+Texture TexCloudS images/mario/cloudsmall.png
+Texture TexBush images/mario/bush.png
+Texture TexBushBig images/mario/bushbig.png
+Texture TexGround images/mario/ground.png
+Texture TexBlock images/mario/block.png
+Texture TexPole images/mario/flagpole.png
+Texture TexPole Top images/mario/flagtop.png
+Animation Stand TexStand 1 0
+Animation Run TexRun 4 10
+Animation Air TexAir 1 0
