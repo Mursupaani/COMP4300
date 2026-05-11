@@ -105,6 +105,10 @@ class Game {
 
 		void reflectObjectVelocity(EntityPtr e, Vec2 surfaceNormal);
 
+		std::chrono::duration<long> getGameDuration(void) const;
+
+		void sUpdateTextFields(void);
+
 	public:
 		Game(const std::string &config);
 		~Game(void);

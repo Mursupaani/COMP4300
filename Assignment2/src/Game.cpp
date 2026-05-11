@@ -15,10 +15,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
-#include <limits>
 #include <memory>
 #include <random>
-#include <ranges>
 #include <stdexcept>
 #include <string>
 
@@ -46,17 +44,15 @@ void Game::run(void) {
 		m_entities.update();
 
 		if (!m_paused) {
+			++m_currentFrame;
 			sLifeSpan();
 			sEnemySpawner();
 			sMovement();
 			sCollision();
+			sUpdateTextFields();
 		}
 		sUserInput();
 		sRender();
-
-		// NOTE: increment the current frame
-		//  may need to be moved when pause implemented
-		++m_currentFrame;
 	}
 	m_window.close();
 }
@@ -75,12 +71,6 @@ void Game::init(const std::string &path) {
 	} else {
 		m_windowState = sf::State::Windowed;
 	}
-	std::cout << "WINDOW CONFIG:\n";
-	std::cout << m_windowConfig.size.x << std::endl;
-	std::cout << m_windowConfig.size.y << std::endl;
-	std::cout << m_windowConfig.framelimit << std::endl;
-	std::cout << m_windowConfig.fullscreen << std::endl;
-	std::cout << "\n";
 
 	m_window.create(sf::VideoMode(m_windowConfig.size), "Geometry Wars",
 					sf::Style::Default, m_windowState);
@@ -91,13 +81,7 @@ void Game::init(const std::string &path) {
 	m_fontColor = sf::Color(static_cast<uint8_t>(m_fontConfig.colorR),
 							static_cast<uint8_t>(m_fontConfig.colorG),
 							static_cast<uint8_t>(m_fontConfig.colorB));
-	std::cout << "FONT CONFIG:\n";
-	std::cout << m_fontConfig.path << std::endl;
-	std::cout << m_fontConfig.size << std::endl;
-	std::cout << (int)m_fontColor.r << std::endl;
-	std::cout << (int)m_fontColor.g << std::endl;
-	std::cout << (int)m_fontColor.b << std::endl;
-	std::cout << "\n";
+
 	if (!m_font.openFromFile(m_fontConfig.path)) {
 		throw std::runtime_error("Couldn't open font: " + m_fontConfig.path);
 	}
@@ -126,63 +110,22 @@ void Game::init(const std::string &path) {
 	m_timeText->setPosition(
 		sf::Vector2f(m_window.getSize().x / 2.0f, m_fontConfig.size));
 
-	// Do this for all structs
 	fin >> label >> m_playerConfig.SR >> m_playerConfig.CR >>
 		m_playerConfig.S >> m_playerConfig.FR >> m_playerConfig.FG >>
 		m_playerConfig.FB >> m_playerConfig.OR >> m_playerConfig.OG >>
 		m_playerConfig.OB >> m_playerConfig.OT >> m_playerConfig.V;
-	std::cout << "PLAYER CONFIG:\n";
-	std::cout << m_playerConfig.SR << std::endl;
-	std::cout << m_playerConfig.CR << std::endl;
-	std::cout << m_playerConfig.S << std::endl;
-	std::cout << m_playerConfig.FR << std::endl;
-	std::cout << m_playerConfig.FG << std::endl;
-	std::cout << m_playerConfig.FB << std::endl;
-	std::cout << m_playerConfig.OR << std::endl;
-	std::cout << m_playerConfig.OG << std::endl;
-	std::cout << m_playerConfig.OB << std::endl;
-	std::cout << m_playerConfig.OT << std::endl;
-	std::cout << m_playerConfig.V << std::endl;
 
 	fin >> label >> m_enemyConfig.SR >> m_enemyConfig.CR >>
 		m_enemyConfig.SMIN >> m_enemyConfig.SMAX >> m_enemyConfig.OR >>
 		m_enemyConfig.OG >> m_enemyConfig.OB >> m_enemyConfig.OT >>
 		m_enemyConfig.VMIN >> m_enemyConfig.VMAX >> m_enemyConfig.L >>
 		m_enemyConfig.SP;
-	std::cout << "ENEMY CONFIG:\n";
-	std::cout << m_enemyConfig.SR << std::endl;
-	std::cout << m_enemyConfig.CR << std::endl;
-	std::cout << m_enemyConfig.SMIN << std::endl;
-	std::cout << m_enemyConfig.SMAX << std::endl;
-	std::cout << m_enemyConfig.OR << std::endl;
-	std::cout << m_enemyConfig.OG << std::endl;
-	std::cout << m_enemyConfig.OB << std::endl;
-	std::cout << m_enemyConfig.OT << std::endl;
-	std::cout << m_enemyConfig.VMIN << std::endl;
-	std::cout << m_enemyConfig.VMAX << std::endl;
-	std::cout << m_enemyConfig.L << std::endl;
-	std::cout << m_enemyConfig.SP << std::endl;
-	std::cout << "\n";
 
-	std::cout << "BULLET CONFIG:\n";
 	fin >> label >> m_BulletConfig.SR >> m_BulletConfig.CR >>
 		m_BulletConfig.S >> m_BulletConfig.FR >> m_BulletConfig.FG >>
 		m_BulletConfig.FB >> m_BulletConfig.OR >> m_BulletConfig.OG >>
 		m_BulletConfig.OB >> m_BulletConfig.OT >> m_BulletConfig.V >>
 		m_BulletConfig.L;
-	std::cout << m_BulletConfig.SR << std::endl;
-	std::cout << m_BulletConfig.CR << std::endl;
-	std::cout << m_BulletConfig.S << std::endl;
-	std::cout << m_BulletConfig.FR << std::endl;
-	std::cout << m_BulletConfig.FG << std::endl;
-	std::cout << m_BulletConfig.FB << std::endl;
-	std::cout << m_BulletConfig.OR << std::endl;
-	std::cout << m_BulletConfig.OG << std::endl;
-	std::cout << m_BulletConfig.OB << std::endl;
-	std::cout << m_BulletConfig.OT << std::endl;
-	std::cout << m_BulletConfig.V << std::endl;
-	std::cout << m_BulletConfig.L;
-	std::cout << "\n";
 	spawnPlayer();
 }
 
@@ -203,7 +146,6 @@ void Game::reset(void) {
 // NOTE: Private:
 
 void Game::sMovement(void) {
-	// FIXME: Move to handle player movement
 	m_player->cTransform->velocity = {0, 0};
 	if (m_player->cInput->up)
 		m_player->cTransform->velocity.y -= m_playerConfig.S;
@@ -369,17 +311,6 @@ void Game::sRender(void) {
 		m_window.draw(e->cShape->circle);
 	}
 
-	auto duration = std::chrono::duration_cast<std::chrono::seconds>(
-		std::chrono::steady_clock::now() - m_clock.getStartTime());
-	m_timeText->setString(std::to_string(duration.count()));
-
-	m_scoreText->setString("Score: " + std::to_string(m_score));
-
-	if (m_specialAvailable) {
-		m_specialText->setFillColor(sf::Color::Green);
-	} else {
-		m_specialText->setFillColor(sf::Color::Red);
-	}
 	m_window.draw(*m_timeText);
 	m_window.draw(*m_scoreText);
 	m_window.draw(*m_specialText);
@@ -587,5 +518,20 @@ void Game::bounceObjectFromWalls(EntityPtr e) {
 	if (e->cTransform->pos.y + ySize >= screenHeight) {
 		e->cTransform->pos.y = e->cTransform->prevPos.y;
 		reflectObjectVelocity(e, Vec2(0, -1));
+	}
+}
+
+std::chrono::duration<long> Game::getGameDuration(void) const {
+	return (std::chrono::duration_cast<std::chrono::seconds>(
+		std::chrono::steady_clock::now() - m_clock.getStartTime()));
+}
+
+void Game::sUpdateTextFields(void) {
+	m_timeText->setString(std::to_string(getGameDuration().count()));
+	m_scoreText->setString("Score: " + std::to_string(m_score));
+	if (m_specialAvailable) {
+		m_specialText->setFillColor(sf::Color::Green);
+	} else {
+		m_specialText->setFillColor(sf::Color::Red);
 	}
 }
